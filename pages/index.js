@@ -2,14 +2,22 @@ import Head from "next/head";
 import Image from "next/image";
 import styles from "../styles/Home.module.css";
 import { useMoralis } from "react-moralis";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/router";
 import { useMoralisWeb3Api } from "react-moralis";
+import Cropper from "react-easy-crop";
+import CropModal from "./components/CropModal";
 
 export default function Home() {
 	const [nfts, setNfts] = useState([]);
 	const { isAuthenticated, authenticate, account, user, logout } = useMoralis();
-	const router = useRouter();
+	const [selectedImage, setSelectedImage] = useState(null);
+	const [crop, setCrop] = useState({ x: 0, y: 0 });
+	const [zoom, setZoom] = useState(1);
+
+	const onCropComplete = useCallback((croppedArea, croppedAreaPixels) => {
+		console.log(croppedArea, croppedAreaPixels);
+	}, []);
 
 	const Web3Api = useMoralisWeb3Api();
 
@@ -40,6 +48,7 @@ export default function Home() {
 			</Head>
 
 			<main className={styles.main}>
+				{selectedImage ? <CropModal imageUrl={selectedImage} /> : null}
 				<h1 className={styles.title}>Welcome to the PFP Generator</h1>
 
 				<p className={styles.description}>Connect Wallet to get started</p>
@@ -69,6 +78,7 @@ export default function Home() {
 								alt={"nft image"}
 								width={350}
 								height={350}
+								onClick={() => setSelectedImage(`https://night-owls-genesis-nft.s3.us-west-2.amazonaws.com/images/${nft.token_id}.png`)}
 							/>
 						))}
 					</>
