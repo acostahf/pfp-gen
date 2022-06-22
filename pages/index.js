@@ -1,23 +1,16 @@
 import Head from "next/head";
 import Image from "next/image";
 import styles from "../styles/Home.module.css";
+import styled from "styled-components";
 import { useMoralis } from "react-moralis";
 import { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/router";
+import ImageCropDialog from "../ImageCropDialog";
 import { useMoralisWeb3Api } from "react-moralis";
-import Cropper from "react-easy-crop";
-import CropModal from "./components/CropModal";
 
 export default function Home() {
-	const [nfts, setNfts] = useState([]);
 	const { isAuthenticated, authenticate, account, user, logout } = useMoralis();
-	const [selectedImage, setSelectedImage] = useState(null);
-	const [crop, setCrop] = useState({ x: 0, y: 0 });
-	const [zoom, setZoom] = useState(1);
-
-	const onCropComplete = useCallback((croppedArea, croppedAreaPixels) => {
-		console.log(croppedArea, croppedAreaPixels);
-	}, []);
+	const [nfts, setNfts] = useState([]);
+	const [selectedNft, setSelectedNft] = useState(null);
 
 	const Web3Api = useMoralisWeb3Api();
 
@@ -26,7 +19,7 @@ export default function Home() {
 		const options = {
 			chain: "eth",
 			address: account,
-			token_address: "0xac9db91e958d418bf83781ecadf0431601c48193",
+			token_address: "0xAAE22935aB089Ca7CBAe330Eed96DBef8dBC900a",
 		};
 		const kumiteNFTs = await Web3Api.account.getNFTsForContract(options);
 		console.log(kumiteNFTs);
@@ -39,6 +32,24 @@ export default function Home() {
 		}
 	}, [isAuthenticated]);
 
+	const setCroppedImageFor = (id, crop, zoom, aspect, croppedImageUrl) => {
+		const newNftsList = [...nfts];
+		const nftIndex = nfts.findIndex((x) => x.id === id);
+		const nft = nfts[nftIndex];
+		const newnft = { ...nft, croppedImageUrl, crop, zoom, aspect };
+		newNftsList[nftIndex] = newnft;
+		setNfts(newNftsList);
+		setSelectedNft(null);
+	};
+
+	const onCancel = () => {
+		setSelectedNft(null);
+	};
+
+	const resetImage = (id) => {
+		setCroppedImageFor(id);
+	};
+
 	return (
 		<div className={styles.container}>
 			<Head>
@@ -48,7 +59,7 @@ export default function Home() {
 			</Head>
 
 			<main className={styles.main}>
-				{selectedImage ? <CropModal imageUrl={selectedImage} /> : null}
+				{/* {selectedImage ? <CropModal imageUrl={selectedImage} /> : null} */}
 				<h1 className={styles.title}>Welcome to the PFP Generator</h1>
 
 				<p className={styles.description}>Connect Wallet to get started</p>
@@ -71,15 +82,31 @@ export default function Home() {
 
 				{isAuthenticated ? (
 					<>
-						{nfts.map((nft, i) => (
-							<img
-								key={i}
-								src={`https://night-owls-genesis-nft.s3.us-west-2.amazonaws.com/images/${nft.token_id}.png`}
-								alt={"nft image"}
-								width={350}
-								height={350}
-								onClick={() => setSelectedImage(`https://night-owls-genesis-nft.s3.us-west-2.amazonaws.com/images/${nft.token_id}.png`)}
+						{selectedNft ? (
+							<ImageCropDialog
+								id={selectedNft.id}
+								imageUrl={`https://opensea.mypinata.cloud/ipfs/QmXLSFruqS2iZJYXghaZ5mq9TXswd97iXKcGWLcz4GWAqt`}
+								cropInit={selectedNft.crop}
+								zoomInit={selectedNft.zoom}
+								aspectInit={selectedNft.aspect}
+								onCancel={onCancel}
+								setCroppedImageFor={setCroppedImageFor}
+								resetImage={resetImage}
 							/>
+						) : null}
+						{nfts.map((nft) => (
+							<ImageCard key={nft.id}>
+								<img
+									src={
+										nft.croppedImageUrl ? nft.croppedImageUrl : `https://opensea.mypinata.cloud/ipfs/QmXLSFruqS2iZJYXghaZ5mq9TXswd97iXKcGWLcz4GWAqt`
+									}
+									alt=""
+									onClick={() => {
+										console.log(nft);
+										setSelectedNft(nft);
+									}}
+								/>
+							</ImageCard>
 						))}
 					</>
 				) : (
@@ -102,3 +129,10 @@ export default function Home() {
 		</div>
 	);
 }
+
+const ImageCard = styled.div`
+	text-align: center;
+	& img {
+		width: 600px;
+	}
+`;
